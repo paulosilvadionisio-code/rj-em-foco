@@ -21,7 +21,8 @@ function setDrafts(a){localStorage.setItem("rj_drafts",JSON.stringify(a))}
 function vis(){return D.filter(function(x){return!x.hidden})}
 function get(id){return D.filter(function(x){return x.id==id})[0]}
 function badge(x){return'<span class="bd s'+ST.indexOf(x.status)+'">'+x.status+'</span>'}
-function item(x){return'<div class="card it" data-a="open" data-id="'+x.id+'"><div class="ic">'+ic(x.category)+'</div><div><div>'+badge(x)+(x.hidden?'<span class="bd sd">Oculta</span>':"")+'</div><div class="tt">'+esc(x.title)+'</div><div class="sub">por '+esc(x.author_name)+' · '+esc(x.neighborhood)+' · '+fd(x.created_at)+'</div></div></div>'}
+function av(n){n=n||"?";var h=0;for(var i=0;i<n.length;i++)h+=n.charCodeAt(i);return'<div class="av" style="background:hsl('+(h*7%360)+',50%,40%)">'+esc(n.trim().charAt(0).toUpperCase())+'</div>'}
+function item(x){var b=x.body||"";return'<div class="card it" data-a="open" data-id="'+x.id+'"><div class="ic">'+ic(x.category)+'</div><div class="bdy"><div class="tp">'+badge(x)+(x.hidden?'<span class="bd sd">Oculta</span>':"")+'<span class="cg">'+esc(x.category)+'</span></div><div class="tt">'+esc(x.title)+'</div><div class="sub ds">'+esc(b.slice(0,110))+(b.length>110?"…":"")+'</div><div class="ft">'+av(x.author_name)+'<span>'+esc(x.author_name)+'</span><span>📍 '+esc(x.neighborhood)+'</span><span>'+fd(x.created_at)+'</span></div></div>'+(x.photo_url?'<img class="th" src="'+esc(x.photo_url)+'" alt="">':"")+'</div>'}
 function feed(limit){var q=nz(S.q),l=vis().filter(function(x){return(!S.cat||x.category==S.cat)&&(!S.bairro||x.neighborhood==S.bairro)&&(!S.st||x.status==S.st)&&(!q||nz(x.title+" "+x.body).indexOf(q)>-1)});
 l.sort(function(a,b){return(a.created_at<b.created_at?-1:1)*(S.sort=="asc"?1:-1)});if(limit)l=l.slice(0,limit);
 return l.map(item).join("")||'<div class="empty">Nenhuma reclamação encontrada.</div>'}
@@ -31,12 +32,15 @@ function go(v,id){S.v=v;S.id=id||null;if(v=="form"&&!(F&&S.keep)){F=id?toF(id):n
 function toF(id){var x=get(id);if(x)return{kind:"db",id:x.id,t:x.title,d:x.body,c:x.category,b:x.neighborhood,r:x.location||"",img:x.photo_url};
 var d=drafts().filter(function(z){return z.id==id})[0];return d?{kind:"dr",id:d.id,t:d.t,d:d.d,c:d.c,b:d.b,r:d.r}:null}
 function render(){nav();var a=$("app");if(!me.name){a.innerHTML=welcome();return}
-a.innerHTML=({home:home,feed:feedV,form:form,detail:detail,map:map,stats:stats,drafts:draftsV,profile:profile,admin:admin})[S.v]();
+a.innerHTML=({home:home,feed:feedV,form:form,detail:detail,map:map,stats:stats,drafts:draftsV,profile:profile,admin:admin})[S.v]()+'<div class="fo">RJ em Foco · Projeto da Feira de Carreiras · Os status só são atualizados por administradores.</div>';
 if(S.v=="detail")loadUps();if(S.v=="admin")loadReports()}
 function welcome(){return'<div class="wl card"><div class="logo">RJ em <i>Foco</i></div><p class="tt">O Rio tem problemas. A população tem voz.</p><p class="sub">Bem-vindo ao RJ em Foco! Registre problemas urbanos do seu bairro e acompanhe as ocorrências de todo o Rio. Digite seu nome para começar a participar.</p><input id="w_n" maxlength="40" placeholder="Seu nome" autocomplete="nickname"><button class="btn" style="width:100%;margin-top:10px" data-a="enter">Entrar como visitante</button><p class="sub">Sem cadastro, e-mail ou senha. Seu nome aparece nas suas publicações.</p></div>'}
-function cats(){return CATS.map(function(c){return'<button class="cat" data-a="cat" data-c="'+esc(c[0])+'"><span>'+c[1]+'</span>'+esc(c[0])+'</button>'}).join("")}
+function cats(){return CATS.map(function(c,i){var h=(i*37)%360;return'<button class="cat" data-a="cat" data-c="'+esc(c[0])+'"><span style="background:hsla('+h+',70%,50%,.16)">'+c[1]+'</span>'+esc(c[0])+'</button>'}).join("")}
 function counts(){var v=vis(),r=v.filter(function(x){return x.status=="Resolvida"}).length;return'<div class="cnt"><div class="k"><b>'+v.length+'</b><span>cadastradas</span></div><div class="k"><b>'+r+'</b><span>resolvidas</span></div><div class="k"><b>'+(v.length-r)+'</b><span>pendentes</span></div></div>'}
-function home(){return'<div class="hero"><h1>O Rio tem problemas.<br>A população tem voz.</h1><p>Olá, '+esc(me.name)+'! Registre e acompanhe problemas urbanos do seu bairro.</p><button class="btn" data-a="go" data-v="form">＋ Fazer reclamação</button></div>'+counts()+'<h2>Categorias</h2><div class="cats">'+cats()+'</div><h2>Mais recentes</h2>'+feed(6)+'<button class="btn s" style="width:100%" data-a="go" data-v="feed">Ver todas</button>'}
+function home(){var v=vis(),r=v.filter(function(x){return x.status=="Resolvida"}).length;
+return'<div class="hero"><div class="hl"><span class="pill">📍 Rio de Janeiro</span><h1>O Rio tem problemas.<br><em>A população tem voz.</em></h1><p>Olá, '+esc(me.name)+'! Registre problemas do seu bairro, acompanhe cada ocorrência e ajude a cobrar soluções.</p><div class="row hb"><button class="btn" data-a="go" data-v="form">＋ Fazer reclamação</button><button class="btn g" data-a="go" data-v="feed">Ver o mural</button></div></div><div class="hs"><div><b>'+v.length+'</b><span>reclamações</span></div><div><b>'+r+'</b><span>resolvidas</span></div><div><b>'+tally(function(x){return x.neighborhood}).length+'</b><span>bairros</span></div></div></div>'
++'<div class="steps"><div><i>1</i><b>Entre como visitante</b><span>Só com seu nome</span></div><div><i>2</i><b>Registre o problema</b><span>Com foto e local</span></div><div><i>3</i><b>Acompanhe</b><span>Do registro à solução</span></div></div>'
++'<h2>Categorias</h2><div class="cats">'+cats()+'</div><div class="sh"><h2>Mais recentes</h2><a data-a="go" data-v="feed">Ver todas →</a></div>'+feed(6)}
 function sel(id,ph,opts,cur){return'<select id="'+id+'"><option value="">'+ph+'</option>'+opts.map(function(o){return'<option'+(cur==o?" selected":"")+'>'+esc(o)+'</option>'}).join("")+'</select>'}
 function feedV(){var bs=[],m={};D.forEach(function(x){if(!m[x.neighborhood]){m[x.neighborhood]=1;bs.push(x.neighborhood)}});bs.sort();
 return'<h2>Reclamações</h2><div class="fl"><input id="fl_q" placeholder="🔎 Título ou descrição" value="'+esc(S.q)+'">'+sel("fl_cat","Todas as categorias",CATS.map(function(c){return c[0]}),S.cat)+sel("fl_bairro","Todos os bairros",bs,S.bairro)+sel("fl_st","Todos os status",ST,S.st)+'<select id="fl_sort"><option value="desc">Mais recentes</option><option value="asc"'+(S.sort=="asc"?" selected":"")+'>Mais antigas</option></select></div><div id="lst">'+feed()+'</div>'}
@@ -90,7 +94,7 @@ document.addEventListener("input",function(e){var i=e.target.id;if(i=="fl_q"){S.
 document.addEventListener("change",function(e){var i=e.target.id,m={fl_cat:"cat",fl_bairro:"bairro",fl_st:"st",fl_sort:"sort"};
 if(m[i]){S[m[i]]=e.target.value;$("lst").innerHTML=feed()}
 else if(i=="f_i"&&e.target.files[0]){shrink(e.target.files[0],function(b){if(b.size>1900000)return toast("Foto muito grande.");PH=b;var p=$("pv");p.src=URL.createObjectURL(b);p.style.display="block"})}});
-async function boot(){nav();
+async function boot(){nav();var fv=document.createElement("link");fv.rel="icon";fv.href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E📍%3C/text%3E%3C/svg%3E";document.head.appendChild(fv);
 if(!C.url||!C.anonKey||C.url.indexOf("COLE")>-1)return fail("Configure o arquivo config.js com a URL e a chave do Supabase (veja o README).");
 SB=supabase.createClient(C.url,C.anonKey);
 var s=(await SB.auth.getSession()).data.session;
