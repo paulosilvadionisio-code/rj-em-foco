@@ -1,0 +1,102 @@
+(function(){
+"use strict";
+var C=window.RJ_CONFIG||{},SB=null,me={id:"",name:localStorage.getItem("rj_name")||"",admin:false},D=[],F=null,PH=null,CB=null,
+S={v:"home",id:null,q:"",cat:"",bairro:"",st:"",sort:"desc"},OUT="Outro problema (personalizada)",
+CATS=[["Falta de coleta de resíduos sólidos","🗑️"],["Esgoto a céu aberto","☣️"],["Alagamentos e enchentes","🌊"],["Interrupção no fornecimento de energia elétrica","💡"],["Falta de abastecimento de água","💧"],["Ônibus sem climatização adequada","🚌"],["Superlotação no metrô","🚇"],["Incêndios e focos de incêndio","🔥"],["Furto de cabos e fios elétricos","🔌"],["Animal preso em árvore","🐈"],["Estacionamento irregular em calçadas","🚗"],["Animais silvestres em áreas urbanas","🦎"],["Bloqueio de vias públicas","🚧"],["Acidentes e congestionamentos","🚦"],["Poluição sonora e perturbação do sossego","🔊"],["Obras públicas inacabadas","🏗️"],["Falta de professores na rede pública","🎓"],["Desabamentos e riscos estruturais","🏚️"],["Superlotação em hospitais","🏥"],["Problemas no transporte público","🚏"]],
+ST=["Registrada","Em análise","Encaminhada","Em andamento","Resolvida"],
+ZN={"Zona Sul":"copacabana|ipanema|leblon|botafogo|flamengo|laranjeiras|gavea|humaita|urca|leme|lagoa|catete|gloria","Centro":"centro|lapa|santa teresa|saude|gamboa","Zona Norte":"tijuca|meier|madureira|penha|maracana|vila isabel|ramos|bonsucesso|iraja|pavuna|cascadura|ilha do governador","Zona Oeste":"barra da tijuca|recreio|campo grande|santa cruz|bangu|jacarepagua|realengo|guaratiba|taquara"},
+PII=/[\w.+-]+@[\w-]+\.[\w.]+|(\(?\d{2}\)?\s?)?9?\d{4}[-\s]?\d{4}/,
+OLD={"Falta de água":CATS[4][0],"Esgoto a céu aberto":CATS[1][0],"Alagamentos":CATS[2][0],"Furto de fios e cabos":CATS[8][0],"Ônibus atrasados":CATS[19][0],"Lixo nas ruas":CATS[0][0],"Falta de coleta de lixo":CATS[0][0]};
+function $(i){return document.getElementById(i)}
+function esc(t){var d=document.createElement("div");d.textContent=t==null?"":t;return d.innerHTML}
+function ic(c){for(var i=0;i<CATS.length;i++)if(CATS[i][0]==c)return CATS[i][1];return"📍"}
+function fd(t){return new Date(t).toLocaleString("pt-BR",{dateStyle:"short",timeStyle:"short"})}
+function nz(b){return(b||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim()}
+function zone(b){var n=nz(b);for(var z in ZN)if(ZN[z].split("|").indexOf(n)>-1)return z;return"Outras regiões"}
+function toast(m){var t=$("toast");t.textContent=m;t.className="on";clearTimeout(toast.h);toast.h=setTimeout(function(){t.className=""},3200)}
+function ask(m,cb){$("cft").textContent=m;CB=cb;$("cf").style.display="grid"}
+function fail(m){$("app").innerHTML='<div class="card"><b>⚠️ '+esc(m)+'</b></div>'}
+function drafts(){try{return JSON.parse(localStorage.getItem("rj_drafts"))||[]}catch(e){return[]}}
+function setDrafts(a){localStorage.setItem("rj_drafts",JSON.stringify(a))}
+function vis(){return D.filter(function(x){return!x.hidden})}
+function get(id){return D.filter(function(x){return x.id==id})[0]}
+function badge(x){return'<span class="bd s'+ST.indexOf(x.status)+'">'+x.status+'</span>'}
+function item(x){return'<div class="card it" data-a="open" data-id="'+x.id+'"><div class="ic">'+ic(x.category)+'</div><div><div>'+badge(x)+(x.hidden?'<span class="bd sd">Oculta</span>':"")+'</div><div class="tt">'+esc(x.title)+'</div><div class="sub">por '+esc(x.author_name)+' · '+esc(x.neighborhood)+' · '+fd(x.created_at)+'</div></div></div>'}
+function feed(limit){var q=nz(S.q),l=vis().filter(function(x){return(!S.cat||x.category==S.cat)&&(!S.bairro||x.neighborhood==S.bairro)&&(!S.st||x.status==S.st)&&(!q||nz(x.title+" "+x.body).indexOf(q)>-1)});
+l.sort(function(a,b){return(a.created_at<b.created_at?-1:1)*(S.sort=="asc"?1:-1)});if(limit)l=l.slice(0,limit);
+return l.map(item).join("")||'<div class="empty">Nenhuma reclamação encontrada.</div>'}
+function nav(){var N=[["home","Início"],["feed","Reclamações"],["form","Reclamar"],["map","Mapa"],["stats","Estatísticas"],["drafts","Rascunhos"],["profile","Perfil"]];if(me.admin)N.push(["admin","Admin"]);
+$("nav").innerHTML=me.name?N.map(function(n){return'<button class="'+(S.v==n[0]?"on":"")+'" data-a="go" data-v="'+n[0]+'">'+n[1]+'</button>'}).join(""):""}
+function go(v,id){S.v=v;S.id=id||null;if(v=="form"&&!(F&&S.keep)){F=id?toF(id):null;PH=null}S.keep=false;render();scrollTo(0,0)}
+function toF(id){var x=get(id);if(x)return{kind:"db",id:x.id,t:x.title,d:x.body,c:x.category,b:x.neighborhood,r:x.location||"",img:x.photo_url};
+var d=drafts().filter(function(z){return z.id==id})[0];return d?{kind:"dr",id:d.id,t:d.t,d:d.d,c:d.c,b:d.b,r:d.r}:null}
+function render(){nav();var a=$("app");if(!me.name){a.innerHTML=welcome();return}
+a.innerHTML=({home:home,feed:feedV,form:form,detail:detail,map:map,stats:stats,drafts:draftsV,profile:profile,admin:admin})[S.v]();
+if(S.v=="detail")loadUps();if(S.v=="admin")loadReports()}
+function welcome(){return'<div class="wl card"><div class="logo">RJ em <i>Foco</i></div><p class="tt">O Rio tem problemas. A população tem voz.</p><p class="sub">Bem-vindo ao RJ em Foco! Registre problemas urbanos do seu bairro e acompanhe as ocorrências de todo o Rio. Digite seu nome para começar a participar.</p><input id="w_n" maxlength="40" placeholder="Seu nome" autocomplete="nickname"><button class="btn" style="width:100%;margin-top:10px" data-a="enter">Entrar como visitante</button><p class="sub">Sem cadastro, e-mail ou senha. Seu nome aparece nas suas publicações.</p></div>'}
+function cats(){return CATS.map(function(c){return'<button class="cat" data-a="cat" data-c="'+esc(c[0])+'"><span>'+c[1]+'</span>'+esc(c[0])+'</button>'}).join("")}
+function counts(){var v=vis(),r=v.filter(function(x){return x.status=="Resolvida"}).length;return'<div class="cnt"><div class="k"><b>'+v.length+'</b><span>cadastradas</span></div><div class="k"><b>'+r+'</b><span>resolvidas</span></div><div class="k"><b>'+(v.length-r)+'</b><span>pendentes</span></div></div>'}
+function home(){return'<div class="hero"><h1>O Rio tem problemas.<br>A população tem voz.</h1><p>Olá, '+esc(me.name)+'! Registre e acompanhe problemas urbanos do seu bairro.</p><button class="btn" data-a="go" data-v="form">＋ Fazer reclamação</button></div>'+counts()+'<h2>Categorias</h2><div class="cats">'+cats()+'</div><h2>Mais recentes</h2>'+feed(6)+'<button class="btn s" style="width:100%" data-a="go" data-v="feed">Ver todas</button>'}
+function sel(id,ph,opts,cur){return'<select id="'+id+'"><option value="">'+ph+'</option>'+opts.map(function(o){return'<option'+(cur==o?" selected":"")+'>'+esc(o)+'</option>'}).join("")+'</select>'}
+function feedV(){var bs=[],m={};D.forEach(function(x){if(!m[x.neighborhood]){m[x.neighborhood]=1;bs.push(x.neighborhood)}});bs.sort();
+return'<h2>Reclamações</h2><div class="fl"><input id="fl_q" placeholder="🔎 Título ou descrição" value="'+esc(S.q)+'">'+sel("fl_cat","Todas as categorias",CATS.map(function(c){return c[0]}),S.cat)+sel("fl_bairro","Todos os bairros",bs,S.bairro)+sel("fl_st","Todos os status",ST,S.st)+'<select id="fl_sort"><option value="desc">Mais recentes</option><option value="asc"'+(S.sort=="asc"?" selected":"")+'>Mais antigas</option></select></div><div id="lst">'+feed()+'</div>'}
+function form(){var x=F||{};return'<h2>'+(F&&F.kind=="db"?"Editar reclamação":"Nova reclamação")+'</h2><div class="card"><label>Título</label><input id="f_t" maxlength="90" value="'+esc(x.t)+'" placeholder="Ex.: Falta de água na minha rua"><label>Descreva o problema</label><textarea id="f_d" rows="6" maxlength="2000" placeholder="Escreva livremente. Não inclua telefones, e-mails ou endereços residenciais.">'+esc(x.d)+'</textarea><label>Categoria</label>'+sel("f_c","Selecione…",CATS.map(function(c){return c[0]}).concat([OUT]),x.c)+'<label>Bairro</label><input id="f_b" maxlength="60" value="'+esc(x.b)+'" placeholder="Ex.: Tijuca"><label>Rua ou localização aproximada</label><input id="f_r" maxlength="120" value="'+esc(x.r)+'" placeholder="Ex.: perto da estação do metrô"><label>Fotografia (opcional, reduzida automaticamente)</label><input type="file" id="f_i" accept="image/*"><img id="pv" class="pic" alt="Prévia" src="'+esc(x.img||"")+'" style="'+(x.img?"":"display:none")+'"><div class="row"><button class="btn" id="bp" data-a="pub">Publicar reclamação</button><button class="btn s" data-a="draft">Salvar como rascunho</button><button class="btn s" data-a="cancel">Cancelar</button></div><div class="note">Data e horário são registrados automaticamente. Rascunhos ficam só neste aparelho.</div></div>'}
+function detail(){var x=get(S.id);if(!x)return'<div class="empty">Reclamação não encontrada.</div>';var mine=x.author_id==me.id;
+return'<button class="btn s" data-a="go" data-v="feed">← Voltar</button><div class="card" style="margin-top:12px">'+badge(x)+(x.hidden?'<span class="bd sd">Oculta</span>':"")+'<h2 style="margin:8px 0">'+ic(x.category)+' '+esc(x.title)+'</h2><div class="sub">por <b>'+esc(x.author_name)+'</b> · '+esc(x.category)+'<br>📍 '+esc(x.neighborhood)+(x.location?' · '+esc(x.location):"")+'<br>Publicada em '+fd(x.created_at)+'</div>'+(x.photo_url?'<img class="pic" src="'+esc(x.photo_url)+'" alt="Foto da ocorrência">':"")+'<p style="white-space:pre-wrap">'+esc(x.body)+'</p><div class="tl">'+ST.map(function(s,i){return'<div class="'+(i<=ST.indexOf(x.status)?"on":"")+'">'+s+'</div>'}).join("")+'</div><h2 style="margin-top:6px">Histórico de atualizações</h2><div id="ups" class="sub">Carregando…</div>'
++(mine?'<div class="row"><button class="btn s" data-a="edit">✏️ Editar</button><button class="btn r" data-a="del">🗑️ Excluir</button></div>':'<div class="row"><select id="rp"><option>Conteúdo inadequado</option><option>Spam</option><option>Dados pessoais expostos</option><option>Informação falsa</option></select><button class="btn s" data-a="report">🚩 Denunciar</button></div>')
++(me.admin?'<div class="note"><b>Moderação</b></div><select id="a_s">'+ST.map(function(s){return'<option'+(x.status==s?" selected":"")+'>'+s+'</option>'}).join("")+'</select><textarea id="a_n" rows="2" style="margin-top:8px" placeholder="Atualização (apenas informações confirmadas)"></textarea><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="a_h" style="width:auto"'+(x.hidden?" checked":"")+'>Ocultar do mural</label><button class="btn" style="width:100%;margin-top:8px" data-a="adm">Salvar moderação</button>':"")+'</div>'}
+async function loadUps(){var r=await SB.from("updates").select("*").eq("complaint_id",S.id).order("created_at"),e=$("ups");if(!e)return;
+e.innerHTML=r.data&&r.data.length?r.data.map(function(u){return'<div class="up"><b>'+esc(u.status)+'</b> · '+fd(u.created_at)+'<br>'+esc(u.note)+'</div>'}).join(""):"Nenhuma atualização ainda. Registrada pelo visitante, sem confirmação de órgãos públicos."}
+function bars(a){var mx=a.length?a[0][1]:1;return a.slice(0,6).map(function(r){return'<div class="br"><div>'+esc(r[0])+'</div><div><div class="bar" style="width:'+r[1]/mx*100+'%"></div></div><b>'+r[1]+'</b></div>'}).join("")||'<div class="sub">Sem dados.</div>'}
+function tally(k){var m={};vis().forEach(function(x){var v=k(x);m[v]=(m[v]||0)+1});return Object.keys(m).map(function(v){return[v,m[v]]}).sort(function(a,b){return b[1]-a[1]})}
+function stats(){var v=vis();return'<h2>Estatísticas</h2><div class="cnt"><div class="k"><b>'+v.length+'</b><span>total</span></div>'+ST.slice(0,3).map(function(s){return'<div class="k"><b>'+v.filter(function(x){return x.status==s}).length+'</b><span>'+s+'</span></div>'}).join("")+'<div class="k"><b>'+v.filter(function(x){return x.status==ST[3]}).length+'</b><span>Em andamento</span></div><div class="k"><b>'+v.filter(function(x){return x.status==ST[4]}).length+'</b><span>Resolvidas</span></div></div><div class="note">Calculado em tempo real a partir das reclamações no banco de dados.</div><div class="card"><b>Categorias mais registradas</b>'+bars(tally(function(x){return x.category}))+'</div><div class="card"><b>Bairros com mais ocorrências</b>'+bars(tally(function(x){return x.neighborhood}))+'</div>'}
+function map(){var c={};vis().forEach(function(x){var z=zone(x.neighborhood);c[z]=(c[z]||0)+1});var Z=["Zona Norte","Zona Sul","Zona Oeste","Centro","Outras regiões"];
+var l=S.zone?vis().filter(function(x){return zone(x.neighborhood)==S.zone}):[];
+return'<h2>Mapa de ocorrências</h2><div class="note">⚠️ Mapa ilustrativo por região: os agrupamentos usam o bairro informado e não representam limites geográficos reais.</div><div class="zn">'+Z.map(function(z){return'<button data-a="zone" data-z="'+z+'"><b>'+(c[z]||0)+'</b>'+z+'</button>'}).join("")+'</div>'+(S.zone?'<h2>'+esc(S.zone)+'</h2>'+(l.map(item).join("")||'<div class="empty">Nada registrado aqui.</div>'):"")}
+function draftsV(){var d=drafts();return'<h2>Meus rascunhos</h2><div class="note">Privados, salvos somente neste aparelho (sem foto).</div>'+(d.map(function(x){return'<div class="card it" data-a="open" data-id="'+x.id+'" data-dr="1"><div class="ic">📝</div><div><div class="tt">'+esc(x.t||"(sem título)")+'</div><div class="sub">Rascunho · toque para continuar</div></div></div>'}).join("")||'<div class="empty">Nenhum rascunho.</div>')}
+function profile(){return'<h2>Meu perfil</h2><div class="card"><label>Nome exibido</label><input id="p_n" maxlength="40" value="'+esc(me.name)+'"><button class="btn" style="width:100%;margin-top:10px" data-a="rename">Salvar nome</button><div class="note">ID do visitante (nunca é o nome): <b style="word-break:break-all">'+esc(me.id)+'</b>'+(me.admin?"<br>Você é administrador.":"")+'</div><button class="btn s" style="width:100%" data-a="import">Importar reclamações da versão antiga deste aparelho</button></div>'}
+function admin(){return'<h2>Painel administrativo</h2><div id="rps" class="sub">Carregando denúncias…</div><h2>Todas as reclamações</h2>'+D.map(item).join("")}
+async function loadReports(){var r=await SB.from("reports").select("reason,created_at,complaint_id,complaints(title)").order("created_at",{ascending:false}).limit(50),e=$("rps");if(!e)return;
+e.innerHTML=r.data&&r.data.length?r.data.map(function(x){return'<div class="card it" data-a="open" data-id="'+x.complaint_id+'"><div class="ic">🚩</div><div><div class="tt">'+esc(x.complaints?x.complaints.title:"")+'</div><div class="sub">'+esc(x.reason)+' · '+fd(x.created_at)+'</div></div></div>'}).join(""):"Nenhuma denúncia."}
+function shrink(f,cb){var r=new FileReader();r.onload=function(){var i=new Image();i.onload=function(){var s=Math.min(1,1000/Math.max(i.width,i.height)),c=document.createElement("canvas");c.width=i.width*s;c.height=i.height*s;c.getContext("2d").drawImage(i,0,0,c.width,c.height);c.toBlob(function(b){cb(b)},"image/jpeg",.72)};i.src=r.result};r.readAsDataURL(f)}
+async function load(){var r=await SB.from("complaints").select("*").order("created_at",{ascending:false}).limit(500);if(r.error){toast("Erro ao carregar: "+r.error.message);return}D=r.data;if(["home","feed","map","stats","admin"].indexOf(S.v)>-1&&me.name&&document.activeElement.tagName!="INPUT")render()}
+async function pub(isDraft){var t=$("f_t").value.trim(),d=$("f_d").value.trim(),c=$("f_c").value,b=$("f_b").value.trim(),r=$("f_r").value.trim();
+if(isDraft){if(!t&&!d)return toast("Escreva ao menos um título ou texto.");var a=drafts(),id=F&&F.kind=="dr"?F.id:"dr"+Date.now();a=a.filter(function(z){return z.id!=id});a.unshift({id:id,t:t,d:d,c:c,b:b,r:r});setDrafts(a);F=null;PH=null;toast("Rascunho salvo neste aparelho ✔");return go("drafts")}
+if(t.length<5||d.length<10||!c||b.length<2)return toast("Preencha título (5+ letras), descrição (10+), categoria e bairro.");
+if(PII.test(t+" "+d+" "+r))return toast("Remova telefones, e-mails ou dados pessoais do texto.");
+var btn=$("bp");btn.disabled=true;var url=F&&F.img||null;
+if(PH){var path=me.id+"/"+Date.now()+".jpg",u=await SB.storage.from("photos").upload(path,PH,{contentType:"image/jpeg"});if(u.error){btn.disabled=false;return toast("Erro na foto: "+u.error.message)}url=SB.storage.from("photos").getPublicUrl(path).data.publicUrl}
+var row={title:t,body:d,category:c,neighborhood:b,location:r,photo_url:url},res=F&&F.kind=="db"?await SB.from("complaints").update(row).eq("id",F.id).select().single():await SB.from("complaints").insert(Object.assign({author_name:me.name},row)).select().single();
+if(res.error){btn.disabled=false;return toast("Não foi possível publicar: "+res.error.message)}
+if(F&&F.kind=="dr")setDrafts(drafts().filter(function(z){return z.id!=F.id}));
+toast("Reclamação publicada ✔");F=null;PH=null;await load();go("detail",res.data.id)}
+var A={go:function(e){go(e.dataset.v)},
+enter:function(){var n=$("w_n").value.trim();if(n.length<2)return toast("Digite seu nome (2+ letras).");me.name=n;localStorage.setItem("rj_name",n);render()},
+rename:function(){var n=$("p_n").value.trim();if(n.length<2)return toast("Nome muito curto.");me.name=n;localStorage.setItem("rj_name",n);toast("Nome atualizado ✔ (vale para novas publicações)")},
+open:function(e){e.dataset.dr?go("form",e.dataset.id):go("detail",e.dataset.id)},
+cat:function(e){S.cat=e.dataset.c;go("feed")},zone:function(e){S.zone=e.dataset.z;render()},
+pub:function(){pub(false)},draft:function(){pub(true)},
+cancel:function(){ask("Cancelar e descartar o que foi escrito?",function(){F=null;PH=null;go("home")})},
+edit:function(){go("form",S.id)},
+del:function(){ask("Excluir esta reclamação permanentemente?",async function(){var r=await SB.from("complaints").delete().eq("id",S.id);if(r.error)return toast("Erro: "+r.error.message);toast("Reclamação excluída");await load();go("feed")})},
+report:async function(){var r=await SB.from("reports").insert({complaint_id:S.id,reason:$("rp").value});toast(r.error?"Você já denunciou esta publicação.":"Denúncia enviada. Obrigado! ✔")},
+adm:async function(){var r=await SB.rpc("admin_update",{p_id:S.id,p_status:$("a_s").value,p_note:$("a_n").value.trim()||null,p_hidden:$("a_h").checked});if(r.error)return toast("Erro: "+r.error.message);toast("Moderação salva ✔");await load();render()},
+"import":async function(){var o=[];try{o=JSON.parse(localStorage.getItem("rjfoco_v1"))||[]}catch(e){}o=o.filter(function(x){return!x.demo&&!x.draft});if(!o.length)return toast("Nenhuma reclamação antiga encontrada neste aparelho.");var n=0;
+for(var i=0;i<o.length;i++){var x=o[i],r=await SB.from("complaints").insert({author_name:me.name,title:x.t,body:x.d,category:OLD[x.cat]||OUT,neighborhood:x.b||"Não informado",location:x.r||null,photo_url:null});if(!r.error)n++}
+toast(n+" de "+o.length+" importadas (fotos antigas não são migradas)");await load()},
+yes:function(){$("cf").style.display="none";CB&&CB()},no:function(){$("cf").style.display="none"}};
+document.addEventListener("click",function(e){var el=e.target.closest("[data-a]");if(el&&A[el.dataset.a])A[el.dataset.a](el)});
+document.addEventListener("input",function(e){var i=e.target.id;if(i=="fl_q"){S.q=e.target.value;$("lst").innerHTML=feed()}});
+document.addEventListener("change",function(e){var i=e.target.id,m={fl_cat:"cat",fl_bairro:"bairro",fl_st:"st",fl_sort:"sort"};
+if(m[i]){S[m[i]]=e.target.value;$("lst").innerHTML=feed()}
+else if(i=="f_i"&&e.target.files[0]){shrink(e.target.files[0],function(b){if(b.size>1900000)return toast("Foto muito grande.");PH=b;var p=$("pv");p.src=URL.createObjectURL(b);p.style.display="block"})}});
+async function boot(){nav();
+if(!C.url||!C.anonKey||C.url.indexOf("COLE")>-1)return fail("Configure o arquivo config.js com a URL e a chave do Supabase (veja o README).");
+SB=supabase.createClient(C.url,C.anonKey);
+var s=(await SB.auth.getSession()).data.session;
+if(!s){var r=await SB.auth.signInAnonymously();if(r.error)return fail("Não foi possível entrar como visitante. Ative “Allow anonymous sign-ins” no Supabase. "+r.error.message);s=r.data.session}
+me.id=s.user.id;var a=await SB.from("admins").select("user_id").maybeSingle();me.admin=!!a.data;
+await load();render();
+SB.channel("rj").on("postgres_changes",{event:"*",schema:"public",table:"complaints"},function(){clearTimeout(boot.t);boot.t=setTimeout(load,400)}).subscribe()}
+boot();
+})();
