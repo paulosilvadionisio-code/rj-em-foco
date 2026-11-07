@@ -229,3 +229,27 @@ nav button{position:relative;transition:color .18s ease,background-color .18s ea
 @media(max-width:600px){.explore-section{margin-top:27px}.explore-section h2{font-size:22px}.explore-cat{gap:8px;padding:12px 10px;min-height:83px}.explore-icon{width:30px;height:32px}.explore-label{font-size:12px}.explore-arrow{display:none}.neighborhood-strip{padding:20px}.resolved-list{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){.more-categories[open] .explore-categories{animation:none}}
 
+
+/* Compact, practical opening with a neighborhood finder. */
+header{border-top:3px solid var(--g)}
+.hd{min-height:73px;gap:24px}
+nav{gap:3px;align-items:center}
+nav button{padding:10px 9px;font-size:12px}
+nav button[data-v="form"]{border:1px solid #cddbd0;border-radius:5px;color:var(--g);margin:0 5px}
+nav button[data-v="form"]:hover,nav button[data-v="form"].on{background:#edf3e9;box-shadow:none}
+.home-intro{grid-template-columns:minmax(0,1.3fr) minmax(300px,1fr);gap:70px;padding:24px 0 30px}
+.home-intro h1{font-size:clamp(34px,4.1vw,50px);letter-spacing:-1.7px;line-height:1.08;margin:19px 0 18px}
+.home-intro p{max-width:40ch;font-size:15px;margin:0 0 23px}
+.intro-link{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 8px;font:inherit;font-weight:600;font-size:13px;background:none;border:0;color:var(--g);cursor:pointer;transition:color .18s}
+.intro-link:hover{color:var(--g2);text-decoration:underline;text-underline-offset:5px}
+.neighborhood-finder{padding:24px;background:#fff;border:1px solid var(--line);border-radius:9px}
+.finder-heading{display:flex;gap:12px;align-items:center;margin-bottom:18px}.finder-heading h2{font-size:17px;margin:0 0 4px;letter-spacing:-.3px}.finder-heading p{font-size:12px;color:var(--mut);margin:0;line-height:1.5}.finder-heading .explore-icon{width:40px;height:44px}
+.neighborhood-finder label{font-size:11px;margin:0 0 7px;color:var(--mut)}
+.neighborhood-finder select{font-size:14px;padding:12px;border-radius:5px;background:#fafbf8}
+.finder-submit{width:100%;justify-content:space-between;margin-top:10px;font-size:13px}
+.finder-note{display:block;font-size:10px;line-height:1.65;color:var(--mut);margin-top:11px}
+.intro-counts{border-top:0;border-bottom:1px solid var(--line);padding:0 0 22px;gap:18px 30px}.intro-counts b{font-size:22px}
+@media(max-width:900px) and (min-width:760px){.hd{gap:14px;padding-left:18px;padding-right:18px}nav{gap:0}nav button{padding:10px 6px;font-size:11px}.home-intro{gap:28px;grid-template-columns:1.15fr 1fr}}
+@media(max-width:759px){.hd{min-height:62px}.home-intro{grid-template-columns:1fr;gap:23px;padding:14px 0 24px}.home-intro h1{font-size:40px;letter-spacing:-1.3px}.home-intro p{font-size:14px;margin-bottom:18px;max-width:43ch}.neighborhood-finder{padding:19px}.finder-heading{margin-bottom:15px}.finder-note{font-size:11px}.intro-counts{gap:12px 20px;padding-bottom:20px}.intro-counts button{flex-basis:100%;text-align:left}.intro-counts b{font-size:20px}nav button{font-size:14px}nav button[data-v="form"]{margin:4px 0}.intro-link{min-height:46px}}
+@media(prefers-reduced-motion:no-preference){.neighborhood-finder{animation:soft-enter .3s ease-out both}}
+
